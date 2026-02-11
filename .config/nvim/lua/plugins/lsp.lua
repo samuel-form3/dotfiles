@@ -25,36 +25,12 @@ return {
             vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
           end
 
-          vim.diagnostic.config({
-            severity_sort = true,
-            float = { border = 'rounded', source = 'if_many' },
-            underline = { severity = vim.diagnostic.severity.ERROR },
-            signs = vim.g.have_nerd_font and {
-              text = {
-                [vim.diagnostic.severity.ERROR] = '󰅚 ',
-                [vim.diagnostic.severity.WARN] = '󰀪 ',
-                [vim.diagnostic.severity.INFO] = '󰋽 ',
-                [vim.diagnostic.severity.HINT] = '󰌶 ',
-              },
-            } or {},
-            virtual_text = {
-              source = 'if_many',
-              spacing = 2,
-              format = function(diagnostic)
-                local diagnostic_message = {
-                  [vim.diagnostic.severity.ERROR] = diagnostic.message,
-                  [vim.diagnostic.severity.WARN] = diagnostic.message,
-                  [vim.diagnostic.severity.INFO] = diagnostic.message,
-                  [vim.diagnostic.severity.HINT] = diagnostic.message,
-                }
-                return diagnostic_message[diagnostic.severity]
-              end,
-            },
-          })
-
           map('<leader>rn', vim.lsp.buf.rename, 'Rename')
           map('<leader>ca', vim.lsp.buf.code_action, 'Code Action', { 'n', 'x' })
-
+          map('<leader>cl', function()
+            vim.lsp.codelens.refresh()
+            vim.lsp.codelens.run()
+          end, 'Run CodeLens actions', { 'n', 'x' })
           local client = vim.lsp.get_client_by_id(event.data.client_id)
           if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
             local highlight_augroup = vim.api.nvim_create_augroup('lsp-highlight', { clear = false })
@@ -77,12 +53,57 @@ return {
                 vim.api.nvim_clear_autocmds({ group = 'lsp-highlight', buffer = event2.buf })
               end,
             })
+
+            vim.diagnostic.config({
+              virtual_text = true,
+              underline = true,
+              update_in_insert = true,
+              severity_sort = true,
+              float = {
+                border = 'rounded',
+                source = false,
+              },
+              signs = {
+                text = {
+                  [vim.diagnostic.severity.ERROR] = '󰅚 ',
+                  [vim.diagnostic.severity.WARN] = '󰀪 ',
+                  [vim.diagnostic.severity.INFO] = '󰋽 ',
+                  [vim.diagnostic.severity.HINT] = '󰌶 ',
+                },
+                numhl = {
+                  [vim.diagnostic.severity.ERROR] = 'ErrorMsg',
+                  [vim.diagnostic.severity.WARN] = 'WarningMsg',
+                },
+              },
+            })
           end
         end,
       })
 
       local servers = {
-        gopls = {},
+        gopls = {
+          usePlaceholders = true,
+          completeUnimported = true,
+          staticcheck = true,
+          analyses = {
+            unusedparams = true,
+            unreachable = true,
+            fieldalignment = false, -- expensive
+          },
+          hints = {
+            assignVariableTypes = true,
+            compositeLiteralFields = true,
+            constantValues = true,
+            rangeVariableTypes = true,
+          },
+          codelenses = {
+            generate = true,
+            gc_details = false,
+            test = true,
+            tidy = true,
+            upgrade_dependency = true,
+          },
+        },
         terraformls = {},
         lua_ls = {
           settings = {

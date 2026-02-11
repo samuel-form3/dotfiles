@@ -7,7 +7,7 @@ return {
       dim_inactive = true,
     },
     init = function()
-      vim.cmd.colorscheme 'tokyonight-moon'
+      vim.cmd.colorscheme('tokyonight-moon')
     end,
   },
 }
