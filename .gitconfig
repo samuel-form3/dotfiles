@@ -31,6 +31,7 @@
 	st = status
 	lg = log --all --graph --decorate --oneline --abbrev-commit
 	c = commit
+	cs = commit --signoff -v
 	ac = !git add -A && git commit
 	br = branch -a
 	remotes = remote -v
@@ -39,7 +40,7 @@
 	sf = !git add -A && git commit --signoff && git push --force-with-lease
 	fix = !git add -A && git commit --amend --no-edit && git push --force-with-lease
 	am = commit --ammend
-	uncommit = reset --soft HEAD~1
+	undo = reset --soft HEAD~1
 	cdroot = !cd $(git root)
 	root = rev-parse --show-toplevel
 	b = branch --sort=-committerdate

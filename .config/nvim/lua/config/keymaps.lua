@@ -19,11 +19,10 @@ vim.keymap.set('v', '<C-k>', ":m '<-2<CR>gv=gv", { desc = 'Move selection up', s
 vim.keymap.set('n', '0', '^', { desc = 'Go to first non-whitespace character of the line' })
 vim.keymap.set('n', 'Y', 'y$', { desc = 'Yank til end of line' })
 -- Diagnostic keymaps
-vim.keymap.set('n', '<leader>dp', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
-vim.keymap.set('n', '<leader>dn', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
+vim.keymap.set('n', '<leader>dp', vim.diagnostic.goto_prev, { desc = 'Go to [P]revious Diagnostic message' })
+vim.keymap.set('n', '<leader>dn', vim.diagnostic.goto_next, { desc = 'Go to [N]ext diagnostic message' })
 vim.keymap.set('n', '<leader>de', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
-vim.keymap.set('n', '<leader>dq', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
--- Quickfix
+vim.keymap.set('n', '<leader>dq', vim.diagnostic.setqflist, { desc = 'Load diagnostics into [Q]uickfix' })
 vim.keymap.set('n', '<leader>cn', '<CMD>cnext<CR>zz', { desc = 'Forward quickfix' })
 vim.keymap.set('n', '<leader>cp', '<CMD>cprev<CR>zz', { desc = 'Previous quickfix' })
 vim.keymap.set('n', '<leader>cc', '<CMD>cclose<CR>zz', { desc = 'Close quickfix' })

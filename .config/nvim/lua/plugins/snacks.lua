@@ -300,6 +300,13 @@ return {
         desc = 'Goto Definition',
       },
       {
+        'gD',
+        function()
+          Snacks.picker.lsp_declarations()
+        end,
+        desc = 'Goto Declaration',
+      },
+      {
         'gr',
         function()
           Snacks.picker.lsp_references()
@@ -320,6 +327,20 @@ return {
           Snacks.picker.lsp_type_definitions()
         end,
         desc = 'Goto T[y]pe Definition',
+      },
+      {
+        'gai',
+        function()
+          Snacks.picker.lsp_incoming_calls()
+        end,
+        desc = 'C[a]lls Incoming',
+      },
+      {
+        'gao',
+        function()
+          Snacks.picker.lsp_outgoing_calls()
+        end,
+        desc = 'C[a]lls Outgoing',
       },
       {
         '<leader>ss',
