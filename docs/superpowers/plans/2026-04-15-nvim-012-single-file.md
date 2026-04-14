@@ -83,7 +83,7 @@ require('blink.cmp').setup({ keymap = { preset = 'default' }, sources = { defaul
 local treesitter = require('nvim-treesitter')
 local ts_langs = { 'bash', 'c', 'diff', 'go', 'gomod', 'gosum', 'gotmpl', 'hcl', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'terraform', 'vim', 'vimdoc' }
 treesitter.setup()
-if #vim.api.nvim_list_uis() > 0 then
+if vim.fn.executable('tree-sitter') == 1 and #vim.api.nvim_list_uis() > 0 then
   local installed = {}
   for _, lang in ipairs(treesitter.get_installed()) do installed[lang] = true end
   local missing = vim.tbl_filter(function(lang) return not installed[lang] end, ts_langs)

@@ -264,7 +264,7 @@ local ts_langs = {
 
 treesitter.setup()
 
-if #vim.api.nvim_list_uis() > 0 then
+if vim.fn.executable('tree-sitter') == 1 and #vim.api.nvim_list_uis() > 0 then
   local installed = {}
   for _, lang in ipairs(treesitter.get_installed()) do
     installed[lang] = true
