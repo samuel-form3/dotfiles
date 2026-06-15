@@ -122,7 +122,12 @@ vim.pack.add({
 }, { confirm = false })
 
 -- Theme
-vim.cmd.colorscheme('tokyonight-moon')
+if vim.fn.has('mac') == 1 then
+  local appearance = vim.system({ 'defaults', 'read', '-g', 'AppleInterfaceStyle' }, { text = true }):wait()
+  vim.o.background = appearance.stdout:match('Dark') and 'dark' or 'light'
+end
+
+vim.cmd.colorscheme('tokyonight')
 
 -- Mini
 require('mini.ai').setup({ n_lines = 500 })
