@@ -1,20 +1,15 @@
-theme = tokyonight_moon
+theme = light:tokyonight_day,dark:tokyonight_moon
 macos-titlebar-style = tabs
-font-size = 18
 cursor-style = block
 mouse-hide-while-typing = true
 window-padding-balance = true
 window-save-state = always
-font-thicken = false
-adjust-cell-width = -1
 macos-secure-input-indication = false
-#  macos-icon = blueprint
 confirm-close-surface = false
 unfocused-split-opacity = 0.8
 unfocused-split-fill = #000000
 
 # Keybindings
-
 keybind = ctrl+a>c=new_tab
 keybind = ctrl+a>s>s=new_split:auto
 keybind = ctrl+a>s>l=new_split:right
