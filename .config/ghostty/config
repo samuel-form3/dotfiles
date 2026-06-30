@@ -3,11 +3,14 @@ macos-titlebar-style = tabs
 cursor-style = block
 mouse-hide-while-typing = true
 window-padding-balance = true
+window-padding-x = 8
+window-padding-y = 4
 window-save-state = always
 macos-secure-input-indication = false
 confirm-close-surface = false
 unfocused-split-opacity = 0.8
 unfocused-split-fill = #000000
+font-size = 18
 
 # Keybindings
 keybind = ctrl+a>c=new_tab

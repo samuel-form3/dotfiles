@@ -8,6 +8,7 @@ local autocmd = vim.api.nvim_create_autocmd
 
 -- Options
 vim.opt.number = true
+vim.opt.relativenumber = true
 vim.opt.mouse = 'a'
 vim.opt.showmode = false
 vim.opt.breakindent = true
@@ -53,6 +54,8 @@ end)
 -- Keymaps
 map('n', '<leader>w', '<cmd>write<cr>', { desc = 'Write' })
 map('n', '<leader>q', '<cmd>quit<cr>', { desc = 'Quit' })
+map('n', '<leader>x', '<cmd>x<cr>', { desc = 'Write and quit' })
+map('n', '<leader>Q', '<cmd>qa<cr>', { desc = 'Quit all' })
 map('n', '<esc>', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlight' })
 map('n', 'j', 'gj', { desc = 'Down by display line' })
 map('n', 'k', 'gk', { desc = 'Up by display line' })
@@ -64,6 +67,9 @@ map('v', '<c-j>', ":m '>+1<cr>gv=gv", { desc = 'Move selection down' })
 map('v', '<c-k>', ":m '<-2<cr>gv=gv", { desc = 'Move selection up' })
 map('n', '0', '^', { desc = 'First non-blank character' })
 map('n', 'Y', 'y$', { desc = 'Yank to end of line' })
+map('n', '<s-l>', '<cmd>bnext<cr>', { desc = 'Next buffer' })
+map('n', '<s-h>', '<cmd>bprevious<cr>', { desc = 'Previous buffer' })
+map('n', '<leader>sr', [[:%s/\<<c-r><c-w>\>//g<left><left>]], { desc = 'Replace word in buffer' })
 map('n', '[d', function()
   vim.diagnostic.jump({ count = -1, float = true })
 end, { desc = 'Previous diagnostic' })
@@ -72,26 +78,99 @@ map('n', ']d', function()
 end, { desc = 'Next diagnostic' })
 map('n', '<leader>de', vim.diagnostic.open_float, { desc = 'Diagnostic float' })
 map('n', '<leader>dq', vim.diagnostic.setqflist, { desc = 'Diagnostics to quickfix' })
+map('n', '<leader>dt', function()
+  vim.diagnostic.enable(not vim.diagnostic.is_enabled())
+end, { desc = 'Toggle diagnostics' })
+map('n', '<leader>lr', '<cmd>LspRestart<cr>', { desc = 'LSP restart' })
 map('n', '<leader>co', '<cmd>copen<cr>', { desc = 'Open quickfix' })
 map('n', '<leader>cc', '<cmd>cclose<cr>', { desc = 'Close quickfix' })
 map('n', '<leader>cn', '<cmd>cnext<cr>zz', { desc = 'Next quickfix' })
 map('n', '<leader>cp', '<cmd>cprev<cr>zz', { desc = 'Previous quickfix' })
 map('t', '<esc><esc>', '<c-\\><c-n>', { desc = 'Exit terminal mode' })
 
-local function go_test(args)
+local function go_root_and_pkg()
   local dir = vim.fn.expand('%:p:h')
+  local root = vim.fs.root(dir, { 'go.work', 'go.mod' }) or dir
+  local rel = vim.fs.relpath(root, dir)
+  local pkg = rel and rel ~= '' and './' .. rel or '.'
+  return root, pkg
+end
+
+local function go_test(opts)
+  opts = opts or {}
+  local root, pkg = go_root_and_pkg()
+  local cmd = { 'go', 'test', '-count=1' }
+  if opts.run then
+    cmd[#cmd + 1] = '-run'
+    cmd[#cmd + 1] = vim.fn.shellescape(opts.run)
+  end
+  cmd[#cmd + 1] = opts.pkg or pkg
+
   vim.cmd.write()
   vim.cmd.botright('split')
-  vim.cmd.terminal('cd ' .. vim.fn.shellescape(dir) .. ' && go test ' .. (args or ''))
+  vim.cmd.terminal('cd ' .. vim.fn.shellescape(root) .. ' && ' .. table.concat(cmd, ' '))
   vim.cmd.startinsert()
 end
 
-map('n', '<leader>tt', function()
+local function go_enclosing_test_func()
+  if vim.bo.filetype ~= 'go' then
+    return nil
+  end
+
+  local node = vim.treesitter.get_node()
+  while node do
+    if node:type() == 'function_declaration' or node:type() == 'method_declaration' then
+      local name_node = node:field('name')
+      if name_node then
+        local name = vim.treesitter.get_node_text(name_node, 0)
+        if name:match('^Test') then
+          return name
+        end
+      end
+    end
+    node = node:parent()
+  end
+
+  local row = vim.api.nvim_win_get_cursor(0)[1] - 1
+  for i = row, 0, -1 do
+    local line = vim.api.nvim_buf_get_lines(0, i, i + 1, false)[1]
+    local name = line:match('^func %(?%*?[%w%.]+%)? (Test%w+)')
+    if name then
+      return name
+    end
+  end
+end
+
+local function go_test_funcs_in_file()
+  local names = {}
+  for _, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+    local name = line:match('^func %(?%*?[%w%.]+%)? (Test%w+)')
+    if name then
+      names[#names + 1] = name
+    end
+  end
+  return names
+end
+
+map('n', '<leader>Tp', function()
   go_test()
 end, { desc = 'Go test package' })
-map('n', '<leader>ta', function()
-  go_test('./...')
-end, { desc = 'Go test package tree' })
+map({ 'n', 'x' }, '<leader>Tt', function()
+  local name = go_enclosing_test_func()
+  if not name then
+    vim.notify('No test function at cursor', vim.log.levels.WARN)
+    return
+  end
+  go_test({ run = '^' .. name .. '$' })
+end, { desc = 'Go test function' })
+map('n', '<leader>Tf', function()
+  local names = go_test_funcs_in_file()
+  if #names == 0 then
+    vim.notify('No test functions in file', vim.log.levels.WARN)
+    return
+  end
+  go_test({ run = '^(' .. table.concat(names, '|') .. ')$' })
+end, { desc = 'Go test file' })
 
 -- Autocmds
 autocmd('TextYankPost', {
@@ -114,6 +193,8 @@ autocmd({ 'VimEnter', 'WinEnter', 'BufWinEnter', 'WinLeave', 'BufWinLeave' }, {
 vim.pack.add({
   { src = 'https://github.com/folke/tokyonight.nvim' },
   { src = 'https://github.com/echasnovski/mini.nvim' },
+  { src = 'https://github.com/folke/which-key.nvim' },
+  { src = 'https://git.disroot.org/andyg/leap.nvim' },
   { src = 'https://github.com/folke/snacks.nvim' },
   { src = 'https://github.com/saghen/blink.cmp', version = 'v1' },
   { src = 'https://github.com/nvim-treesitter/nvim-treesitter', version = 'main' },
@@ -136,10 +217,49 @@ require('mini.pairs').setup()
 require('mini.statusline').setup()
 require('mini.comment').setup()
 
+-- Which-key
+require('which-key').setup({
+  preset = 'helix',
+  spec = {
+    { '<leader>b', group = 'Buffer' },
+    { '<leader>c', group = 'Quickfix' },
+    { '<leader>d', group = 'Diagnostics' },
+    { '<leader>f', group = 'Find' },
+    { '<leader>g', group = 'Git' },
+    { '<leader>l', group = 'LSP' },
+    { '<leader>s', group = 'Search' },
+    { '<leader>T', group = 'Test' },
+    { '<leader>a', group = 'Actions' },
+  },
+})
+
+map('n', '<leader>?', function()
+  require('which-key').show({ global = false })
+end, { desc = 'Buffer keymaps' })
+
+map({ 'n', 'x', 'o' }, 't', '<Plug>(leap)', { desc = 'Leap' })
+
 -- Snacks
 local Snacks = require('snacks')
 Snacks.setup({
   bigfile = { enabled = true },
+  dashboard = {
+    enabled = true,
+    sections = {
+      { section = 'header' },
+      { section = 'keys', gap = 1, padding = 1 },
+    },
+    preset = {
+      keys = {
+        { icon = ' ', key = 'f', desc = 'Find File', action = ':lua Snacks.dashboard.pick("files")' },
+        { icon = ' ', key = 'n', desc = 'New File', action = ':ene | startinsert' },
+        { icon = ' ', key = 'g', desc = 'Find Text', action = ':lua Snacks.dashboard.pick("live_grep")' },
+        { icon = ' ', key = 'r', desc = 'Recent Files', action = ':lua Snacks.dashboard.pick("oldfiles")' },
+        { icon = ' ', key = 'c', desc = 'Config', action = ':lua Snacks.dashboard.pick("files", {cwd = vim.fn.stdpath("config")})' },
+        { icon = ' ', key = 'q', desc = 'Quit', action = ':qa' },
+      },
+    },
+  },
   quickfile = { enabled = true },
   indent = { enabled = true, animate = { enabled = false } },
   input = { enabled = true },
@@ -312,7 +432,7 @@ end, { desc = 'Format buffer' })
 
 -- LSP
 vim.diagnostic.config({
-  virtual_text = true,
+  virtual_text = { current_line = true },
   underline = true,
   severity_sort = true,
   float = { border = 'rounded', source = false },
@@ -373,10 +493,10 @@ vim.lsp.config('gopls', {
         fieldalignment = false,
       },
       hints = {
-        assignVariableTypes = true,
+        assignVariableTypes = false,
         compositeLiteralFields = true,
         constantValues = true,
-        rangeVariableTypes = true,
+        rangeVariableTypes = false,
       },
       codelenses = {
         generate = true,
